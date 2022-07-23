@@ -1,11 +1,13 @@
 <template>
   <div class="pane-parent">
     <div class="pane-left">
-      <Field ref="field" />
+      <h1>
+        {{maze.question}} = <input v-model="answer" v-on:keydown.enter="onKeyDown" :disabled="statusGame!=1" />
+      </h1>
     </div>
     <div class="pane-right">
       <div class="status">
-        <h1>Maze Attack</h1>
+        <h1>Attack</h1>
       </div>
       <div class="status">
         <h2 v-if="statusGame == 1">Game Start !</h2>
@@ -13,14 +15,13 @@
         <h2 v-if="statusGame == 9">Game Clear !</h2>
       </div>
       <div class="status">
-        <label v-for="(i, v) in this.levelList" :key="i">
-          <input type="radio" v-model="size" v-bind:value="i" @change="reset()">Lv. {{v}}
+        <label v-for="it in this.levelList" :key="it">
+          <input type="radio" v-model="maze.level" v-bind:value="it.id" @change="reset()" />{{it.name}}
         </label>
       </div>
       <div class="status">
         <button v-on:click="start()">START</button> |
-        <button v-on:click="btnOpend()"  v-bind:disabled="statusGame!=1">Opend</button> |
-        <button v-on:click="btnClosed()" v-bind:disabled="statusGame!=1">Closed</button>
+        <button v-on:click="reset()">RESET</button>
       </div>
       <div class="status counter">
         <div v-bind:style="'width:'+(counterAll/counterMax*100)+'%'">
@@ -40,35 +41,33 @@
 <script lang="ts">
 import { Options, Vue } from 'vue-class-component';
 import Timer from './Timer.vue';
-import Field from './Field.vue';
-import KeyHandler from '../KeyHandler';
+import Maze from '../Maze';
 
 @Options({
   components: {
     Timer,
-    Field,
   }
 })
 export default class Board extends Vue {
-  keyHandler = new KeyHandler(this);
+  maze = new Maze();
+
   counterAll = 0;
   counterMax = 10; // fixme: 10
   counterOk = 0;
   statusResult = 0; // 0:結果表示なし / 1:OK / 2:NG
   statusGame = 0;   // 0:停止 / 1:実行中 / 8: / 9:
 
-  timer:Timer|null = null;
-  field:Field|null = null;
+  answer:string = "";
 
-  levelList = {1:10, 2:20, 3:40, 4:80};
-  size = 10;
+  timer:Timer|null = null;
 
   soundOk = require('@/assets/sounds/ok.mp3');
   soundNg = require('@/assets/sounds/ng.mp3');
 
+  levelList = [{id:"add", name:"足し算"},{id:"sub", name:"引き算"},{id:"multi", name:"掛け算"}];
+
   mounted() {
     this.timer = this.$refs.timer as Timer;
-    this.field = this.$refs.field as Field;
   }
 
   data() {
@@ -80,15 +79,13 @@ export default class Board extends Vue {
     this.counterOk = 0;
     this.statusResult = 0;
     this.statusGame = 0;
-    this.field!.maze!.size = this.size;
-    this.field!.reset();
     this.timer!.reset();
   }
 
   start() {
     this.reset();
     this.statusGame = 1;
-    this.field!.start();
+    this.next();
     this.timer!.start();
   }
 
@@ -113,21 +110,20 @@ export default class Board extends Vue {
     return s;
   }
 
+  onKeyDown(e: any) {
+    console.log(e.key);
+    if(this.maze.check(this.answer)) {
+      this.updateStatus(true);
+      this.next();
+    } else {
+      this.updateStatus(false);
+    }
+  }
+
   next() {
+    this.answer = "";
     this.counterAll++;
-    if(this.statusGame == 1) this.field!.maze.main();
-  }
-
-  btnOpend() {
-    if(this.statusGame!=1) return;
-    this.updateStatus(!this.field!.maze.closed);
-    this.next();
-  }
-
-  btnClosed() {
-    if(this.statusGame!=1) return;
-    this.updateStatus(this.field!.maze.closed);
-    this.next();
+    if(this.statusGame == 1) this.maze.main();
   }
 }
 </script>
@@ -145,12 +141,12 @@ h1,h2 {
   font-size: xxx-large;
 }
 
-div.pane-parent {
-  display:flex;
+h1 input {
+  font-size: smaller;
 }
 
-div.pane-left {
-  width: 70%;
+div.pane-parent {
+  display:flex;
 }
 
 div.pane-left {
