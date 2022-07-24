@@ -21,7 +21,11 @@ export default class Maze {
 
     createQuestion() : string {
         if(this.level == "add") return this.randI(10) + " + " + this.randI(10);
-        if(this.level == "sub") return this.randI(10) + " - " + this.randI(10);
+        if(this.level == "sub") {
+            const a = this.randI(10);
+            const b = this.randI(10);
+            return (a + b) + " - " + b;
+        }
         if(this.level == "multi") return this.randI(10) + " * " + this.randI(10);
 
         return "";
